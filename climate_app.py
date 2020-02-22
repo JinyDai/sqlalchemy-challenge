@@ -32,10 +32,10 @@ def welcome():
         f"-the station list from database<br/>"
         f"/api/v1.0/tobs<br/>"
         f"-the dates and temperature observations from last 12 months<br/>"
-        f"/api/v1.0/2015-03-15<br/>"
-        f"-the minimum temperature, the average temperature, and the max temperature for all dates greater than and equal to 2015-03-15<br/>"
-        f"/api/v1.0/2016-08-23/2017-08-23<br/>"
-        f"-the minimum temperature, the average temperature, and the max temperature for dates between 2016-08-23 and 2017-08-23 inclusive"
+        f"/api/v1.0/<start><br/>"
+        f"-the minimum temperature, the average temperature, and the max temperature for all dates greater than and equal to start date<br/>"
+        f"/api/v1.0/<start>/<end><br/>"
+        f"-the minimum temperature, the average temperature, and the max temperature for dates between start date and end date inclusive"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -48,10 +48,8 @@ def precipitation():
     session.close()
 
     all_precipitation=[]
-    for date,prcp in results:
-        precipitation_dict={"date":"prcp"}
-        precipitation_dict["date"]=date
-        precipitation_dict["prcp"]=prcp
+    for result in results:
+        precipitation_dict={result.date:result.prcp}
         all_precipitation.append(precipitation_dict)
     
     return jsonify(all_precipitation)
@@ -82,21 +80,19 @@ def tob():
     session.close()
 
     all_tob=[]
-    for date,tob in results:
-        tob_dict={"date":"tob"}
-        tob_dict["date"]=date
-        tob_dict["tobs"]=tob
+    for result in results:
+        tob_dict={result.date:result.tobs}
         all_tob.append(tob_dict)
     
     return jsonify(all_tob)
 
-@app.route("/api/v1.0/2015-03-15")
-def start():
+@app.route("/api/v1.0/<start>")
+def start(start):
     session=Session(engine)
-    results = session.query(func.max(Measurement.tobs), \
-                            func.min(Measurement.tobs),\
-                            func.avg(Measurement.tobs)).\
-                            filter(Measurement.date >= "2015-03-15").all()
+    results = session.query(func.min(Measurement.tobs), \
+                            func.avg(Measurement.tobs),\
+                            func.max(Measurement.tobs)).\
+                            filter(Measurement.date >= start).all()
     
     session.close()
     start_temp=[]
@@ -109,14 +105,14 @@ def start():
     
     return jsonify(start_temp)
 
-@app.route("/api/v1.0/2016-08-23/2017-08-23")
-def start_end():
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(start,end):
     session=Session(engine)
-    results = session.query(func.max(Measurement.tobs), \
-                            func.min(Measurement.tobs),\
-                            func.avg(Measurement.tobs)).\
-                            filter(Measurement.date >= "2016-08-23").\
-                            filter(Measurement.date<="2017-08-23") .all()
+    results = session.query(func.min(Measurement.tobs), \
+                            func.avg(Measurement.tobs),\
+                            func.max(Measurement.tobs)).\
+                            filter(Measurement.date >= start).\
+                            filter(Measurement.date<=end) .all()
     
     session.close()
     start_end_temp=[]
